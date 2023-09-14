@@ -30,6 +30,12 @@ var lotteryDraws;
 /** Total number of Lottery Balls that will be drawn. */
 var totalNumberOfLotteryBalls = 6;
 
+/** Minimum value a lottery ball can be */
+var minimumValue = 1;
+
+/** Maximum value a lottery ball can be */
+var maximumValue = 59;
+
 /** Numbers drawn from the Lottery */
 var lotteryNumbers = [];
 
@@ -74,7 +80,7 @@ function startGame()
     
     if(!validatePlayerNumbers())
     {
-        statusMessageText.text = "One or more numbers are the same, please ensure all numbers are different!";
+        statusMessageText.text = "One or more numbers are the same, or are not in range. Please ensure all numbers are a different number from 1-59!";
         enableUI();
 
         return;
@@ -186,7 +192,7 @@ function validatePlayerNumbers()
     {
         if(input.value === "")
             input.value = getRandomUniqueNumber(playerNumbers);
-        else if(!isUniqueNumber(input.value, playerNumbers))
+        else if(!isUniqueNumber(input.value, playerNumbers) && !isInRange(input.value))
             return false;
 
         playerNumbers.push(input.value);
@@ -210,6 +216,14 @@ function getRandomUniqueNumber(numbersToCheckAgainst)
     }
 
     return number;
+}
+
+function isInRange(number)
+{
+    if (number < minimumValue)
+        return false;
+
+    return number < maximumValue;
 }
 
 /**

@@ -114,10 +114,11 @@ function drawLotteryBall(xOffset)
 
     for(const input of playerInput)
     {
-        if(input.value === numberDrawn)
+        if(parseInt(input.value) === numberDrawn)
         {
             numberOfMatches++;
             statusMessageText.text = "You have matched "+ numberOfMatches + " balls so far!";
+            break;
         }
     }
 }
@@ -128,18 +129,23 @@ function drawLotteryBall(xOffset)
 function validatePrize()
 {
     var prize = paytable[numberOfMatches];
-    switch(prize)
+    switch(numberOfMatches)
     {
         case 6:
-            statusMessageText.text = "Congragulations! You have won the Jackpot! The Jackpot is worth: "+ prize + "! Press Reset Game to play again!";
+            statusMessageText.text = "Congratulations! You have won the Jackpot! The Jackpot is worth: "+ prize + "! Press Reset Game to play again!";
+            break;
         case 5:
             statusMessageText.text = "Big Win! This prize is worth: "+ prize + "! Press Reset Game to play again!";
+            break;
         case 4:
             statusMessageText.text = "Good Win! This prize is worth: "+ prize + "! Press Reset Game to play again!";
+            break;
         case 3:
             statusMessageText.text = "Win! This prize is worth: "+ prize + "! Press Reset Game to play again!";
+            break;
         default: 
             statusMessageText.text = "You did not win a prize. Press Reset Game to play again!";
+            break;
     }
 }
 

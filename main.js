@@ -39,6 +39,9 @@ var maximumValue = 59;
 /** Numbers drawn from the Lottery */
 var lotteryNumbers = [];
 
+/** Array of lottery ball objects */
+var lotteryBalls = [];
+
 var app;
 
 window.onload = function ()
@@ -55,7 +58,7 @@ window.onload = function ()
     app.stage.addChild(resetGameButton);
 
     statusMessageText = new PIXI.Text(
-        "Welcome to Lotto Big Bucks! Select your numbers above and press a button bellow to play!",
+        "Welcome to Lotto Big Bucks! Select your numbers above and press a button below to play!",
         {fontFamily : 'Arial', fontSize: 24, fill : 0xff1010, align : 'center'}
     );
 
@@ -88,8 +91,7 @@ function startGame()
 
     statusMessageText.text = "Numbers picked! Awaiting draw...";
     drawLotteryNumbers();
-    validatePrize();
-    resetGameButton.interactive = true;
+    displayRewards();
 }
 
 /** 
@@ -97,13 +99,32 @@ function startGame()
  */
 function drawLotteryNumbers()
 {
-    let numberOfBallsDrawn = 0;
-
-    for(var i = 0; i < totalNumberOfLotteryBalls; i++)
+    for(let i = 0; i < totalNumberOfLotteryBalls; i++)
     {
-        drawLotteryBall(i);
-        numberOfBallsDrawn++;
+        drawLotteryBallAtTime(i * 1000, i);
     }
+}
+
+/**
+ * Async function to draw each lottery ball one at a time
+ * @param delay: Time to delay the lottery ball draw
+ * @param index: Index of current lottery ball
+ */
+async function drawLotteryBallAtTime(delay, index)
+{
+    new Promise(() => {
+        setTimeout(() => { drawLotteryBall(index) }, delay)
+    });
+}
+
+async function displayRewards()
+{
+    new Promise(() => {
+        setTimeout(() => {
+            validatePrize();
+            resetGameButton.interactive = true;
+        }, 6500)
+    });
 }
 
 /** 
@@ -114,7 +135,8 @@ function drawLotteryNumbers()
 function drawLotteryBall(xOffset)
 {
     var numberDrawn = getRandomUniqueNumber(lotteryNumbers);
-    var lotteryBall = getNewLotteryBall(numberDrawn, (100 * xOffset) + 100, 100);
+    var lotteryBall = getNewLotteryBall(numberDrawn, (125 * xOffset) + 100, 100);
+    lotteryBalls.push(lotteryBall);
     lotteryNumbers.push(numberDrawn);
     app.stage.addChild(lotteryBall);
 
@@ -192,10 +214,16 @@ function validatePlayerNumbers()
     {
         if(input.value === "")
             input.value = getRandomUniqueNumber(playerNumbers);
-        else if(!isUniqueNumber(input.value, playerNumbers) && !isInRange(input.value))
-            return false;
+        else
+        {
+            if(!isInRange(parseInt(input.value)))
+                return false;
 
-        playerNumbers.push(input.value);
+            if(!isUniqueNumber(parseInt(input.value), playerNumbers))
+                return false;
+        }
+
+        playerNumbers.push(parseInt(input.value));
     }
 
     return true;
@@ -211,7 +239,7 @@ function getRandomUniqueNumber(numbersToCheckAgainst)
     let isUnique = false;
     while(!isUnique)
     {
-        number = Math.floor((Math.random() * 58) + 1);
+        number = Math.floor(Math.random() * 58) + 1;
         isUnique = isUniqueNumber(number, numbersToCheckAgainst);
     }
 
@@ -233,11 +261,7 @@ function isInRange(number)
  */
 function isUniqueNumber(number, numbersToCheckAgainst)
 {
-    for(const playerNum of numbersToCheckAgainst)
-        if(number === playerNum)
-            return false;
-
-    return true;
+    return numbersToCheckAgainst.indexOf(number) === -1;
 }
 
 /**
@@ -264,9 +288,12 @@ function resetGame()
     for(const input of playerInput)
         input.value = "";
 
+    for(const lotteryBall of lotteryBalls)
+        lotteryBall.clear();
+
     enableUI();
 
-    statusMessageText.text = "Welcome to Lotto Big Bucks! Select your numbers above and press a button bellow to play!";
+    statusMessageText.text = "Welcome to Lotto Big Bucks! Select your numbers above and press a button below to play!";
 }
 
 /**

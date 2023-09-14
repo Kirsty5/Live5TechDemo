@@ -4,7 +4,10 @@ var canvas;
 var paytable = [0, 0, 0, 50, 100, 200, 500];
 
 /** Numbers the player has chosen or randomly picked. */
-var playerNumbers;
+var playerNumbers = [];
+
+/** The number of numbers that the player has matched with the lottery. */
+var numberOfMatches = 0;
 
 /** Button object to start the game. */
 var startGameButton;
@@ -15,42 +18,287 @@ var luckyDipButton;
 /** Button object to reset the game. */
 var resetGameButton;
 
-window.onload = function () {
-    canvas = document.getElementById('gameCanvas');
-    ctx = canvas.getContext("2d");
+/** The number inputs the player can adjust and view their numbers. */
+var playerInput;
 
-    startGameButton = document.getElementById('startGameButton');
-    startGameButton.addEventListener("click", startGame);
+/** Message at the top of the PIXI screen. */
+var statusMessageText;
 
-    luckyDipButton = document.getElementById('luckyDipButton');
-    luckyDipButton.addEventListener("click", luckyDip);
+/** The numbers that have been drawn by the lottery. */
+var lotteryDraws;
 
-    resetGameButton = document.getElementById('resetGameButton');
-    resetGameButton.addEventListener("click", resetGame);
+/** Total number of Lottery Balls that will be drawn. */
+var totalNumberOfLotteryBalls = 6;
 
-    this.drawWelcomeText();
+/** Numbers drawn from the Lottery */
+var lotteryNumbers = [];
+
+var app;
+
+window.onload = function ()
+{
+    app = new PIXI.Application({ width: 1280, height: 640 });
+    document.body.appendChild(app.view);
+
+    startGameButton = getNewButton("Start Game", startGame, 25, 200);
+    luckyDipButton = getNewButton("Lucky Dip", luckyDip, 200, 200);
+    resetGameButton = getNewButton("Reset Game", resetGame, 375, 200);
+
+    app.stage.addChild(startGameButton);
+    app.stage.addChild(luckyDipButton);
+    app.stage.addChild(resetGameButton);
+
+    statusMessageText = new PIXI.Text(
+        "Welcome to Lotto Big Bucks! Select your numbers above and press a button bellow to play!",
+        {fontFamily : 'Arial', fontSize: 24, fill : 0xff1010, align : 'center'}
+    );
+
+    app.stage.addChild(statusMessageText);
+
+    playerInput = [
+        document.getElementById("selection1"),
+        document.getElementById("selection2"),
+        document.getElementById("selection3"),
+        document.getElementById("selection4"),
+        document.getElementById("selection5"),
+        document.getElementById("selection6")
+    ];
 }
 
-/** Draw the Welcome Text at the top of the screen. */
-function drawWelcomeText() {
-    requestAnimationFrame(drawWelcomeText);
+/** 
+ * Start the lottery game.
+ */
+function startGame()
+{
+    disableUI();
+    
+    if(!validatePlayerNumbers())
+    {
+        statusMessageText.text = "One or more numbers are the same, please ensure all numbers are different!";
+        enableUI();
 
-    welcomeString = "Welcome to Lotto Big Bucks!";
-    ctx.font = "52px Titan One";
-    ctx.fillText(welcomeString, 0, 50);
+        return;
+    }
+
+    statusMessageText.text = "Numbers picked! Awaiting draw...";
+    drawLotteryNumbers();
+    validatePrize();
+    resetGameButton.interactive = true;
 }
 
-/** Start the lottery game */
-function startGame() {
+/** 
+ * Draw the lottery numbers
+ */
+function drawLotteryNumbers()
+{
+    let numberOfBallsDrawn = 0;
 
+    for(var i = 0; i < totalNumberOfLotteryBalls; i++)
+    {
+        drawLotteryBall(i);
+        numberOfBallsDrawn++;
+    }
 }
 
-/** Select a random set of numbers for the player */
-function luckyDip() {
+/** 
+ * Draw an indivudual lottery ball 
+ * @param xOffset: Offset of the x position
+ *      so that it can be placed next to the last lottery ball
+ */
+function drawLotteryBall(xOffset)
+{
+    var numberDrawn = getRandomUniqueNumber(lotteryNumbers);
+    var lotteryBall = getNewLotteryBall(numberDrawn, (100 * xOffset) + 100, 100);
+    lotteryNumbers.push(numberDrawn);
+    app.stage.addChild(lotteryBall);
 
+    for(const input of playerInput)
+    {
+        if(input.value === numberDrawn)
+        {
+            numberOfMatches++;
+            statusMessageText.text = "You have matched "+ numberOfMatches + " balls so far!";
+        }
+    }
 }
 
-/** Reset the game to play again */
-function resetGame() {
+/** 
+ * Get the prize the player has won after the draw 
+ */
+function validatePrize()
+{
+    var prize = paytable[numberOfMatches];
+    switch(prize)
+    {
+        case 6:
+            statusMessageText.text = "Congragulations! You have won the Jackpot! The Jackpot is worth: "+ prize + "! Press Reset Game to play again!";
+        case 5:
+            statusMessageText.text = "Big Win! This prize is worth: "+ prize + "! Press Reset Game to play again!";
+        case 4:
+            statusMessageText.text = "Good Win! This prize is worth: "+ prize + "! Press Reset Game to play again!";
+        case 3:
+            statusMessageText.text = "Win! This prize is worth: "+ prize + "! Press Reset Game to play again!";
+        default: 
+            statusMessageText.text = "You did not win a prize. Press Reset Game to play again!";
+    }
+}
 
+/** 
+ * Disables all the UI elements while the lottery is being drawn.
+ */
+function disableUI()
+{
+    startGameButton.interactive = false;
+    luckyDipButton.interactive = false;
+    resetGameButton.interactive = false;
+
+    for(const input of playerInput)
+        input.disabled = true;
+}
+
+/**
+ * Enable all the UI elements
+ */
+function enableUI()
+{
+    startGameButton.interactive = true;
+    luckyDipButton.interactive = true;
+    resetGameButton.interactive = true;
+
+    for(const input of playerInput)
+        input.disabled = false;
+}
+
+/**
+ * Validate the numbers that have been inputted
+ * @returns false if one of the numbers is not unique
+ * */
+function validatePlayerNumbers()
+{
+    playerNumbers = [];
+    for(const input of playerInput)
+    {
+        if(input.value === "")
+            input.value = getRandomUniqueNumber(playerNumbers);
+        else if(!isUniqueNumber(input.value, playerNumbers))
+            return false;
+
+        playerNumbers.push(input.value);
+    }
+
+    return true;
+}
+
+/**
+ * @returns a random unique number from the lottery
+ * @param numbersToCheckAgainst: Array of numbers to check the random number against
+ */
+function getRandomUniqueNumber(numbersToCheckAgainst)
+{
+    let number = 1;
+    let isUnique = false;
+    while(!isUnique)
+    {
+        number = Math.floor((Math.random() * 58) + 1);
+        isUnique = isUniqueNumber(number, numbersToCheckAgainst);
+    }
+
+    return number;
+}
+
+/**
+ * @returns True if the number is not inside the array of numbers
+ * @param number: Number to check if it is unique
+ * @param numbersToCheckAgainst: Array of numbers to check if the number is in
+ */
+function isUniqueNumber(number, numbersToCheckAgainst)
+{
+    for(const playerNum of numbersToCheckAgainst)
+        if(number === playerNum)
+            return false;
+
+    return true;
+}
+
+/**
+ * Select a random set of numbers for the player.
+ */
+function luckyDip()
+{
+    const luckyNumbers = []
+    for(const input of playerInput)
+    {
+        input.value = getRandomUniqueNumber(luckyNumbers);
+        luckyNumbers.push(input.value);
+    }
+}
+
+/**
+ * Reset the game to play again.
+ */
+function resetGame()
+{
+    playerNumbers = [];
+    numberOfMatches = 0;
+
+    for(const input of playerInput)
+        input.value = "";
+
+    enableUI();
+
+    statusMessageText.text = "Welcome to Lotto Big Bucks! Select your numbers above and press a button bellow to play!";
+}
+
+/**
+ * @returns a new button element for the in game buttons.
+ * @param buttonText: Text to display on the button
+ * @param onDownFunction: Function to call when the button has been pressed
+ * @param x: X position of the button
+ * @param y: Y position of the button
+ */
+function getNewButton(buttonText, onDownFunction, x, y)
+{
+    var button = new PIXI.Graphics()
+        .beginFill(0xFFFFFF)
+        .drawRoundedRect(0, 0, 150, 50, 15);
+
+    button.x = x;
+    button.y = y;
+    button.interactive = true;
+    button.buttonMode = true;
+    button.on('pointerup', onDownFunction);
+    
+    var buttonLabel = new PIXI.Text(
+        buttonText,
+        {fontFamily : 'Arial', fontSize: 24, fill : 0xff1010, align : 'center'}
+    );
+
+    button.addChild(buttonLabel);
+
+    return button;
+}
+
+/**
+ * @returns a new Lottery Ball element
+ * @param value: Value displayed on the Lottery Ball
+ * @param x: X position of the Lottery Ball
+ * @param y: Y position of the Lottery Ball
+ */
+function getNewLotteryBall(value, x, y)
+{
+    var lotteryBall = new PIXI.Graphics()
+        .beginFill(0xFFFF00)
+        .drawCircle(0, 0, 50);
+    
+    lotteryBall.x = x;
+    lotteryBall.y = y;
+
+    var lotteryBallLabel = new PIXI.Text(
+        value,
+        {fontFamily : 'Arial', fontSize: 24, fill : 0x00000, align : 'center'}
+    );
+
+    lotteryBall.addChild(lotteryBallLabel);
+
+    return lotteryBall;
 }

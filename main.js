@@ -116,8 +116,9 @@ function drawLotteryBall(ballIndex)
     lotteryBalls.push(lotteryBall);
     lotteryNumbers.push(numberDrawn);
     app.stage.addChild(lotteryBall);
-
-    if(numberExistsInArray(numberDrawn, playerNumbers))
+    
+    var playerIndex = playerNumbers.indexOf(numberDrawn);
+    if(playerIndex !== -1)
     {
         numberOfMatches++;
         statusMessageText.text = "You have matched "+ numberOfMatches + " balls so far!";
@@ -128,6 +129,8 @@ function drawLotteryBall(ballIndex)
         matchSprite.x = -25;
         matchSprite.y = -60;
         lotteryBall.addChild(matchSprite);
+
+        playerInput[playerIndex].style.fontWeight = "bold";
     }
 }
 
@@ -270,7 +273,10 @@ function resetGame()
     numberOfMatches = 0;
 
     for(const input of playerInput)
+    {
+        input.style.fontWeight = "normal";
         input.value = "";
+    }
 
     for(const lotteryBall of lotteryBalls)
         lotteryBall.destroy();

@@ -19,7 +19,7 @@ var luckyDipButton;
 var resetGameButton;
 
 /** The number inputs the player can adjust and view their numbers. */
-var playerInput;
+var playerInput = [];
 
 /** Message at the top of the PIXI screen. */
 var statusMessageText;
@@ -46,7 +46,7 @@ var app;
 
 window.onload = function ()
 {
-    app = new PIXI.Application({ width: 1280, height: 640 });
+    app = new PIXI.Application({ width: 1280, height: 640, backgroundColor: 0xFFFFFF });
     document.body.appendChild(app.view);
 
     startGameButton = getNewButton("Start Game", startGame, 25, 200);
@@ -59,19 +59,13 @@ window.onload = function ()
 
     statusMessageText = new PIXI.Text(
         "Welcome to Lotto Big Bucks! Select your numbers above and press a button below to play!",
-        {fontFamily : 'Arial', fontSize: 24, fill : 0xff1010, align : 'center'}
+        {fontFamily : 'Arial', fontSize: 24, fill : 0x000000, align : 'center'}
     );
 
     app.stage.addChild(statusMessageText);
 
-    playerInput = [
-        document.getElementById("selection1"),
-        document.getElementById("selection2"),
-        document.getElementById("selection3"),
-        document.getElementById("selection4"),
-        document.getElementById("selection5"),
-        document.getElementById("selection6")
-    ];
+    for(let i = 1; i <= totalNumberOfLotteryBalls; i++)
+        playerInput.push(document.getElementById("selection" + String(i)));
 }
 
 /** 
@@ -100,9 +94,7 @@ function startGame()
 function drawLotteryNumbers()
 {
     for(let i = 0; i < totalNumberOfLotteryBalls; i++)
-    {
         drawLotteryBallAtTime(i * 1000, i);
-    }
 }
 
 /**
@@ -117,6 +109,9 @@ async function drawLotteryBallAtTime(delay, index)
     });
 }
 
+/**
+ * Async function that gets 
+ */
 async function displayRewards()
 {
     new Promise(() => {
@@ -289,7 +284,7 @@ function resetGame()
         input.value = "";
 
     for(const lotteryBall of lotteryBalls)
-        lotteryBall.clear();
+        lotteryBall.destroy();
 
     enableUI();
 
@@ -299,27 +294,41 @@ function resetGame()
 /**
  * @returns a new button element for the in game buttons.
  * @param buttonText: Text to display on the button
- * @param onDownFunction: Function to call when the button has been pressed
+ * @param onUpFunction: Function to call when the button has been pressed
  * @param x: X position of the button
  * @param y: Y position of the button
  */
-function getNewButton(buttonText, onDownFunction, x, y)
+function getNewButton(buttonText, onUpFunction, x, y)
 {
     var button = new PIXI.Graphics()
         .beginFill(0xFFFFFF)
         .drawRoundedRect(0, 0, 150, 50, 15);
+    button.tint = 0x999999;
 
     button.x = x;
     button.y = y;
     button.interactive = true;
     button.buttonMode = true;
-    button.on('pointerup', onDownFunction);
+    button.on(
+        'pointerdown',
+        () => { button.tint = 0x696969; }
+    );
+    button.on(
+        'pointerup',
+        () => { 
+            button.tint = 0x999999;
+            onUpFunction();
+        }
+    );
     
     var buttonLabel = new PIXI.Text(
         buttonText,
-        {fontFamily : 'Arial', fontSize: 24, fill : 0xff1010, align : 'center'}
+        {fontFamily : 'Arial', fontSize: 24, fill : 0x000000, align : 'center'}
     );
-
+    buttonLabel.anchor.x = 0.5;
+    buttonLabel.anchor.y = 0.5;
+    buttonLabel.x = button.width/2;
+    buttonLabel.y = button.height/2;
     button.addChild(buttonLabel);
 
     return button;
@@ -334,7 +343,7 @@ function getNewButton(buttonText, onDownFunction, x, y)
 function getNewLotteryBall(value, x, y)
 {
     var lotteryBall = new PIXI.Graphics()
-        .beginFill(0xFFFF00)
+        .beginFill(0x66FF00)
         .drawCircle(0, 0, 50);
     
     lotteryBall.x = x;
@@ -344,7 +353,8 @@ function getNewLotteryBall(value, x, y)
         value,
         {fontFamily : 'Arial', fontSize: 24, fill : 0x00000, align : 'center'}
     );
-
+    lotteryBallLabel.anchor.x = 0.5;
+    lotteryBallLabel.anchor.y = 0.5;
     lotteryBall.addChild(lotteryBallLabel);
 
     return lotteryBall;

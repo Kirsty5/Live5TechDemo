@@ -1,4 +1,4 @@
-var canvas;
+var app;
 
 /** Payouts of the lottery starting at 0. */
 var paytable = [0, 0, 0, 50, 100, 200, 500];
@@ -33,16 +33,16 @@ var totalNumberOfLotteryBalls = 6;
 /** Minimum value a lottery ball can be */
 var minimumValue = 1;
 
-/** Maximum value a lottery ball can be */
+/** Maximum value a lottery ball can be. */
 var maximumValue = 59;
 
-/** Numbers drawn from the Lottery */
+/** Numbers drawn from the Lottery. */
 var lotteryNumbers = [];
 
-/** Array of lottery ball objects */
+/** Array of lottery ball objects. */
 var lotteryBalls = [];
 
-var app;
+var lotteryBallColours = [0x66FF00, 0xFF6600, 0xFF0066, 0x6600FF];
 
 window.onload = function ()
 {
@@ -141,6 +141,13 @@ function drawLotteryBall(xOffset)
         {
             numberOfMatches++;
             statusMessageText.text = "You have matched "+ numberOfMatches + " balls so far!";
+
+            var matchSprite = PIXI.Sprite.from("https://cdn-icons-png.flaticon.com/512/5582/5582937.png");
+            matchSprite.width = 50;
+            matchSprite.height = 50;
+            matchSprite.x = -25;
+            matchSprite.y = -60;
+            lotteryBall.addChild(matchSprite);
             break;
         }
     }
@@ -286,6 +293,8 @@ function resetGame()
     for(const lotteryBall of lotteryBalls)
         lotteryBall.destroy();
 
+    lotteryBalls = [];
+
     enableUI();
 
     statusMessageText.text = "Welcome to Lotto Big Bucks! Select your numbers above and press a button below to play!";
@@ -342,12 +351,19 @@ function getNewButton(buttonText, onUpFunction, x, y)
  */
 function getNewLotteryBall(value, x, y)
 {
+    var colourIndex = Math.floor(Math.random() * lotteryBallColours.length);
     var lotteryBall = new PIXI.Graphics()
-        .beginFill(0x66FF00)
+        .beginFill(lotteryBallColours[colourIndex])
         .drawCircle(0, 0, 50);
     
     lotteryBall.x = x;
     lotteryBall.y = y;
+
+    var innerlotteryBall = new PIXI.Graphics()
+        .beginFill(0xFFFFFF)
+        .drawCircle(0, 0, 25);
+
+    lotteryBall.addChild(innerlotteryBall);
 
     var lotteryBallLabel = new PIXI.Text(
         value,

@@ -42,7 +42,11 @@ var lotteryNumbers = [];
 /** Array of lottery ball objects. */
 var lotteryBalls = [];
 
+/** The hex colours a lottery ball can be. */
 var lotteryBallColours = [0x66FF00, 0xFF6600, 0xFF0066, 0x6600FF];
+
+/** Time inbetween drawing each lottery ball in milliseconds */
+var lotteryBallDrawTime = 750;
 
 window.onload = function ()
 {
@@ -52,10 +56,6 @@ window.onload = function ()
     startGameButton = getNewButton("Start Game", startGame, 25, 200);
     luckyDipButton = getNewButton("Lucky Dip", luckyDip, 200, 200);
     resetGameButton = getNewButton("Reset Game", resetGame, 375, 200);
-
-    app.stage.addChild(startGameButton);
-    app.stage.addChild(luckyDipButton);
-    app.stage.addChild(resetGameButton);
 
     statusMessageText = new PIXI.Text(
         "Welcome to Lotto Big Bucks! Select your numbers above and press a button below to play!",
@@ -72,17 +72,14 @@ window.onload = function ()
  * Start the lottery game.
  */
 function startGame()
-{
-    disableUI();
-    
+{   
     if(!validatePlayerNumbers())
     {
         statusMessageText.text = "One or more numbers are the same, or are not in range. Please ensure all numbers are a different number from 1-59!";
-        enableUI();
 
         return;
     }
-
+    disableUI();
     statusMessageText.text = "Numbers picked! Awaiting draw...";
     drawLotteryNumbers();
     displayRewards();
@@ -94,62 +91,43 @@ function startGame()
 function drawLotteryNumbers()
 {
     for(let i = 0; i < totalNumberOfLotteryBalls; i++)
-        drawLotteryBallAtTime(i * 1000, i);
+        setTimeout(() => { drawLotteryBall(i) }, i * lotteryBallDrawTime)
 }
 
 /**
- * Async function to draw each lottery ball one at a time
- * @param delay: Time to delay the lottery ball draw
- * @param index: Index of current lottery ball
+ * Display the rewards after showing the lottery balls
  */
-async function drawLotteryBallAtTime(delay, index)
+function displayRewards()
 {
-    new Promise(() => {
-        setTimeout(() => { drawLotteryBall(index) }, delay)
-    });
-}
-
-/**
- * Async function that gets 
- */
-async function displayRewards()
-{
-    new Promise(() => {
-        setTimeout(() => {
-            validatePrize();
-            resetGameButton.interactive = true;
-        }, 6500)
-    });
+    setTimeout(() => {
+        validatePrize();
+        resetGameButton.interactive = true;
+    }, lotteryBallDrawTime * totalNumberOfLotteryBalls)
 }
 
 /** 
  * Draw an indivudual lottery ball 
- * @param xOffset: Offset of the x position
- *      so that it can be placed next to the last lottery ball
+ * @param ballIndex: Index of the ball to help calculate where it needs to be positioned
  */
-function drawLotteryBall(xOffset)
+function drawLotteryBall(ballIndex)
 {
     var numberDrawn = getRandomUniqueNumber(lotteryNumbers);
-    var lotteryBall = getNewLotteryBall(numberDrawn, (125 * xOffset) + 100, 100);
+    var lotteryBall = getNewLotteryBall(numberDrawn, (125 * ballIndex) + 100, 100);
     lotteryBalls.push(lotteryBall);
     lotteryNumbers.push(numberDrawn);
     app.stage.addChild(lotteryBall);
 
-    for(const input of playerInput)
+    if(numberExistsInArray(numberDrawn, playerNumbers))
     {
-        if(parseInt(input.value) === numberDrawn)
-        {
-            numberOfMatches++;
-            statusMessageText.text = "You have matched "+ numberOfMatches + " balls so far!";
+        numberOfMatches++;
+        statusMessageText.text = "You have matched "+ numberOfMatches + " balls so far!";
 
-            var matchSprite = PIXI.Sprite.from("https://cdn-icons-png.flaticon.com/512/5582/5582937.png");
-            matchSprite.width = 50;
-            matchSprite.height = 50;
-            matchSprite.x = -25;
-            matchSprite.y = -60;
-            lotteryBall.addChild(matchSprite);
-            break;
-        }
+        var matchSprite = PIXI.Sprite.from("https://cdn-icons-png.flaticon.com/512/5582/5582937.png");
+        matchSprite.width = 50;
+        matchSprite.height = 50;
+        matchSprite.x = -25;
+        matchSprite.y = -60;
+        lotteryBall.addChild(matchSprite);
     }
 }
 
@@ -218,14 +196,14 @@ function validatePlayerNumbers()
             input.value = getRandomUniqueNumber(playerNumbers);
         else
         {
-            if(!isInRange(parseInt(input.value)))
+            if(!isInRange(input.valueAsNumber))
                 return false;
 
-            if(!isUniqueNumber(parseInt(input.value), playerNumbers))
+            if(numberExistsInArray(input.valueAsNumber, playerNumbers))
                 return false;
         }
 
-        playerNumbers.push(parseInt(input.value));
+        playerNumbers.push(input.valueAsNumber);
     }
 
     return true;
@@ -241,13 +219,17 @@ function getRandomUniqueNumber(numbersToCheckAgainst)
     let isUnique = false;
     while(!isUnique)
     {
-        number = Math.floor(Math.random() * 58) + 1;
-        isUnique = isUniqueNumber(number, numbersToCheckAgainst);
+        number = Math.floor(Math.random() * maximumValue - minimumValue) + minimumValue;
+        isUnique = !numberExistsInArray(number, numbersToCheckAgainst);
     }
 
     return number;
 }
 
+/**
+ * @returns True if the givin number is in range of the lottery ball numbers we want to show
+ * @param number: Number to check in range of
+ */
 function isInRange(number)
 {
     if (number < minimumValue)
@@ -261,9 +243,9 @@ function isInRange(number)
  * @param number: Number to check if it is unique
  * @param numbersToCheckAgainst: Array of numbers to check if the number is in
  */
-function isUniqueNumber(number, numbersToCheckAgainst)
+function numberExistsInArray(number, numbersToCheckAgainst)
 {
-    return numbersToCheckAgainst.indexOf(number) === -1;
+    return numbersToCheckAgainst.indexOf(number) !== -1;
 }
 
 /**
@@ -271,7 +253,7 @@ function isUniqueNumber(number, numbersToCheckAgainst)
  */
 function luckyDip()
 {
-    const luckyNumbers = []
+    const luckyNumbers = [];
     for(const input of playerInput)
     {
         input.value = getRandomUniqueNumber(luckyNumbers);
@@ -338,7 +320,9 @@ function getNewButton(buttonText, onUpFunction, x, y)
     buttonLabel.anchor.y = 0.5;
     buttonLabel.x = button.width/2;
     buttonLabel.y = button.height/2;
+
     button.addChild(buttonLabel);
+    app.stage.addChild(button);
 
     return button;
 }
@@ -351,19 +335,19 @@ function getNewButton(buttonText, onUpFunction, x, y)
  */
 function getNewLotteryBall(value, x, y)
 {
-    var colourIndex = Math.floor(Math.random() * lotteryBallColours.length);
+    var randomColourIndex = Math.floor(Math.random() * lotteryBallColours.length);
     var lotteryBall = new PIXI.Graphics()
-        .beginFill(lotteryBallColours[colourIndex])
+        .beginFill(lotteryBallColours[randomColourIndex])
         .drawCircle(0, 0, 50);
     
     lotteryBall.x = x;
     lotteryBall.y = y;
 
-    var innerlotteryBall = new PIXI.Graphics()
+    var innerLotteryBall = new PIXI.Graphics()
         .beginFill(0xFFFFFF)
         .drawCircle(0, 0, 25);
 
-    lotteryBall.addChild(innerlotteryBall);
+    lotteryBall.addChild(innerLotteryBall);
 
     var lotteryBallLabel = new PIXI.Text(
         value,
